@@ -1,4 +1,4 @@
-use std::{fs::File, io::{BufReader, Read, Write}, path::PathBuf};
+use std::{fs::File, io::{BufReader, Read, Write}, path::PathBuf, string};
 
 use clap::Parser;
 use honeycomb::{BinaryXmlDeserializer, Policy, SeekableReader};
@@ -72,6 +72,8 @@ fn main() {
 
             if policy.name == policy_name {
                 should_create_policy = false;
+                println!("REMOVING the {} policy", policy.name);
+                println!();
                 println!(
                     "Found {} with start offset {} and end offset {}",
                     policy.name, policy.start_offset, policy.end_offset
@@ -93,14 +95,71 @@ fn main() {
                 let mut new_file = File::create(args.out.clone().unwrap()).unwrap();
                 let _ = new_file.write_all(&buffer);
 
-                println!("Wrote new user profile to {}!", args.out.clone().unwrap());
+                println!("Successfully disabled the {} policy", policy.name);
+                println!("Wrote XML without policy to {}!", args.out.clone().unwrap());
             }
         }
 
         if should_create_policy {
-            println!("TODO: Policy Creation");
+            println!("CREATING the {} policy", policy_name);
+            let offset = deserializer.get_restriction_node_offset();
+            let policy_bytes = policy_to_bytes(&policy_name);
+            let mut buffer = Vec::new();
+            let mut file2 = File::open(USER_PROFILE_PATH).unwrap();
+            file2.read_to_end(&mut buffer).unwrap();
+
+            buffer.splice(
+                *offset as usize..*offset as usize,
+                policy_bytes,
+            );
+
+            // Increment the fifth last byte by one.
+            let len = buffer.len();
+            if len >= 5 {
+                buffer[len - 5] = buffer[len - 5].wrapping_add(1);
+            }
+
+            let mut new_file = File::create(args.out.clone().unwrap()).unwrap();
+            let _ = new_file.write_all(&buffer);
+
+            println!("Successfully added the {} policy", policy_name);
+            println!();
+            println!("Wrote XML with the new policy to {}!", args.out.clone().unwrap());
         }
+        println!();
+        println!("You may want to double check that this XML matches your expectations.");
+        println!("Watch out for any syntax errors that the ABX -> XML conversion caused.");
+        println!("{}", get_readable_xml(args.out.clone().unwrap()));
     }
+}
+
+fn policy_to_bytes(policy_name: &str) -> Vec<u8> {
+    let mut serialized_policy_node = Vec::new();
+    const POLICY_NODE_BYTES: [u8; 3] = [0xCF, 0xFF, 0xFF];
+
+    serialized_policy_node.extend_from_slice(&POLICY_NODE_BYTES);
+    let name_len = policy_name.len() as u16;
+    serialized_policy_node.extend_from_slice(&name_len.to_be_bytes());
+    serialized_policy_node.extend_from_slice(policy_name.as_bytes());
+
+    // for byte in &serialized_policy_node {
+    //     print!("{:02X} ", byte);
+    // }
+    return serialized_policy_node;
+}
+
+fn get_readable_xml(path: String) -> String {
+    let file = File::open(path).unwrap();
+    let buf_reader = BufReader::new(file);
+    let mut seekable_reader = SeekableReader::new(buf_reader);
+    let mut output = Vec::new();
+    let mut deserializer = BinaryXmlDeserializer::new(&mut seekable_reader, &mut output, false).unwrap();
+    let _ = deserializer.deserialize();
+
+    // human readable form of the ABX file
+    let xml_str = String::from_utf8(output).unwrap();
+
+    return xml_str;
 }
 
 fn get_policy_list(abx_path: &str) -> Vec<String> {
