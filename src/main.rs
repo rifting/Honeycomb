@@ -4,9 +4,6 @@ use clap::Parser;
 use honeycomb::{BinaryXmlDeserializer, Policy, SeekableReader};
 use quick_xml::{events::Event, Reader};
 
-// Typically /data/system/users/0.xml
-const USER_PROFILE_PATH: &str = "example.xml";
-
 /// Android device policy editor
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -14,6 +11,10 @@ struct Args {
     /// Name of policy you want to enable/disable
     #[arg(short, long, required_unless_present = "list_policies")]
     policy_name: Option<String>,
+
+    /// Input file. For the primary user on android devices, this is typically /data/system/users/0.xml
+    #[arg(long, default_value = "/data/system/users/0.xml")]
+    profile_path: String,
 
     /// Output file name
     #[arg(short, long, required_unless_present_any(&["overwrite", "list_policies"]))]
@@ -37,9 +38,9 @@ struct Args {
 */
 fn main() {
     let args = Args::parse();
-
+    let user_profile_path = args.profile_path;
     if args.list_policies {
-        let policies = get_policy_list(USER_PROFILE_PATH);
+        let policies = get_policy_list(&user_profile_path);
         for i in 0..policies.len() {
             println!("{}", policies[i]);
         }
@@ -48,7 +49,7 @@ fn main() {
         // For adding a policy, call get_restriction_node_offset to get the restriction offset
         // For removing a policy, use the cleaned policy list struct
         let policy_name = args.policy_name.unwrap();
-        let file = File::open(USER_PROFILE_PATH).unwrap();
+        let file = File::open(&user_profile_path).unwrap();
         let buf_reader = BufReader::new(file);
         let mut seekable_reader = SeekableReader::new(buf_reader);
         let mut output = Vec::new();
@@ -57,7 +58,7 @@ fn main() {
         
         // I named this function terribly. It gets all attributes in the ABX/XML, NOT all policies. So we have to clean it
         let uncleaned_policy_list = deserializer.get_policies().to_vec();
-        let policy_names = get_policy_list(USER_PROFILE_PATH);
+        let policy_names = get_policy_list(&user_profile_path);
         
         let cleaned_policy_list: Vec<Policy> = uncleaned_policy_list
             .into_iter()
@@ -80,7 +81,7 @@ fn main() {
                 );
 
                 let mut buffer = Vec::new();
-                let mut file2 = File::open(USER_PROFILE_PATH).unwrap();
+                let mut file2 = File::open(&user_profile_path).unwrap();
                 file2.read_to_end(&mut buffer).unwrap();
 
                 buffer.drain(policy.start_offset as usize..policy.end_offset as usize);
@@ -105,7 +106,7 @@ fn main() {
             let offset = deserializer.get_restriction_node_offset();
             let policy_bytes = policy_to_bytes(&policy_name);
             let mut buffer = Vec::new();
-            let mut file2 = File::open(USER_PROFILE_PATH).unwrap();
+            let mut file2 = File::open(user_profile_path).unwrap();
             file2.read_to_end(&mut buffer).unwrap();
 
             buffer.splice(
