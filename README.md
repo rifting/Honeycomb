@@ -5,12 +5,13 @@
 Usage: ./honeycomb [OPTIONS]
 
 Options:
-  -p, --policy-name <POLICY_NAME>  Name of policy you want to enable/disable
-  -o, --out <OUT>                  Output file name
-      --list-policies              List available policies and exit
-      --overwrite                  Pass this argument to overwrite the original file
-  -h, --help                       Print help
-  -V, --version                    Print version
+  -p, --policy-name <POLICY_NAME>    Name of policy you want to enable/disable
+      --profile-path <PROFILE_PATH>  Input file. For the primary user on android devices, this is typically /data/system/users/0.xml [default: /data/system/users/0.xml]
+  -o, --out <OUT>                    Output file name
+      --list-policies                List available policies and exit
+      --overwrite                    Pass this argument to overwrite the original file
+  -h, --help                         Print help
+  -V, --version                      Print version
 ```
 ### Warning: Honeycomb is still in development. It may fail to correctly modify the device policy files. Always take backups if you're using the --overwrite argument
 
