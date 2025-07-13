@@ -5,7 +5,7 @@ use honeycomb::{BinaryXmlDeserializer, Policy, SeekableReader};
 use quick_xml::{events::Event, Reader};
 
 // Typically /data/system/users/0.xml
-const USER_PROFILE_PATH: &str = "guh.xml";
+const USER_PROFILE_PATH: &str = "example.xml";
 
 /// Android device policy editor
 #[derive(Parser, Debug)]
@@ -16,14 +16,14 @@ struct Args {
     policy_name: Option<String>,
 
     /// Output file name
-    #[arg(short, long, required_unless_present = "overwrite")]
+    #[arg(short, long, required_unless_present_any(&["overwrite", "list_policies"]))]
     out: Option<String>,
 
     /// List available policies and exit
     #[arg(long)]
     list_policies: bool,
 
-    // Whether to overwrite the original file
+    /// Pass this argument to overwrite the original file
     #[arg(long)]
     overwrite: bool,
 }
