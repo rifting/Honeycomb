@@ -1,0 +1,11 @@
+[package]
+name = "honeycomb"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+clap = { version = "4.5.40", features = ["derive"] }
+hex = "0.4.3"
+thiserror = "2.0.12"
+base64 = "0.22.1"
+quick-xml = "0.38.0"
