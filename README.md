@@ -60,5 +60,4 @@ Honeycomb also works on Windows, Linux, and MacOS if you'd like to locally modif
 
 ## TODO
 - Overwrite argument
-- Allow the user to enter their own profile path instead of hardcoding it
 - Add more safety checks
